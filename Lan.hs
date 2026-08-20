@@ -2,6 +2,9 @@
 
 module Lan where
 
+-- Driver File (imports from everything else)
+
+import Helper
 import LanDef
 import Parser
 
