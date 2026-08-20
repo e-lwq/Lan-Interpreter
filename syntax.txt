@@ -1,0 +1,105 @@
+Syntax for my own invented language Lan:
+
+Available Types:
+- Bool: True, False
+- Char: '...'
+- String: "..."
+- Int: XX
+- Float: XX.XXX
+- List: [XX,XX,...] (allows for elements of different types)
+- Func: <func_name>
+(Any denotes any type)
+(Ord = {Char, String, Int, Float})
+(Num = {Int, Float})
+(Concat = {String, List})
+
+Declaring Variables: (start with var)
+    var <var_name> : <type> = <value>
+
+    Variable names:
+    - starts with a letter
+    - followed by letters / digits / '_'
+
+Setting Variables: (start with set)
+    set <var_name> = <value>
+
+Defining Functions: (start with def)
+    def <func_name> (<param1> : <type1> , ...) : <return_type> {
+        <func_body>
+    }
+
+    Function names:
+    - starts with a letter
+    - followed by letters / digits / '_'
+
+Function Applications: 
+    <func_name> ( <arg1> , ... )
+
+Conditionals: (start with if)
+    if ( <condition> )
+    then { <then_body> }
+    else { <else_body> }
+
+For-loops: (start with for)
+    for ( <var_name> in range (<start>, <end>) ) {
+        <loop_body>
+    }
+    for ( <var_name> in <list> ) {
+        <loop_body>
+    }
+
+While-loops: (start with while)
+    while ( <cond> ) {
+        <loop_body>
+    }
+
+Primitive Operators: (infix)
+    Precedence 0:
+    (||) :: Bool -> Bool -> Bool
+
+    Precedence 1:
+    (&&) :: Bool -> Bool -> Bool
+
+    Precedence 2:
+    (==) :: Any a => a -> a -> Bool
+    (!=) :: Any a => a -> a -> Bool
+    (<) :: Ord a => a -> a -> Bool
+    (>) :: Ord a => a -> a -> Bool
+    (<=) :: Ord a => a -> a -> Bool
+    (>=) :: Ord a => a -> a -> Bool
+
+    Precedence 3:
+    (+) :: Num a => a -> a -> a
+    (-) :: Num a => a -> a -> a
+
+    Precedence 4:
+    (*) :: Num a => a -> a -> a
+    (/) :: Num a => a -> a -> a
+    (//) :: Int -> Int -> Int
+    (%) :: Int -> Int -> Int
+
+Primitive Functions: (applied using Function Application syntax)
+    head :: Any a => List -> a 
+    tail :: List -> List
+    concat :: Concat a => a -> a -> a
+
+Atoms:
+= raw values of type Any | (<Expr>) | Variable reference ie <var_name> | Function Application ie <func_name> (<arg1>, ...)
+
+Factors:
+= <Atom> | <Atom> + [(<Prec4 Op>, <Atom>)]
+
+Terms:
+= <Factor> | <Factor> + [(<Prec3 Op>, <Factor>)]
+
+Comps:
+= <Term> | <Term> + [(<Prec2 Op>, <Term>)]
+
+AndExprs:
+= <Comp> | <Comp> + [(<Prec1 Op, <Comp>)]
+
+Exprs:
+= <AndExpr> | <AndExpr> + [(<Prec0 Op>, <AndExpr>)]
+
+Conditions:
+= Exprs that evaluate to a Boolean
