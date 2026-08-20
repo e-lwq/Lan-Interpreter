@@ -3,7 +3,7 @@ module LanDef where
 -- Base File, do not import from anything else except helper functions
 import Helper
 
-
+-- useful functions / data
 lchars :: [Char]
 lchars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_+=`~{}[]|/?,.<>:; "
 
@@ -31,8 +31,10 @@ addTab str = joinBy "\n" (map ("    " ++) (splitOn '\n' str))
 showBody :: [Block] -> String
 showBody body = addTab (joinBy "\n" (map show body))
 
+-- LanType
 data LanType = TBool | TChar | TString | TInt | TFloat | TList | TFunc deriving (Eq, Show)
 
+-- LanVal
 data LanVal = Bool Bool | Char Char | String String | Int Int | Float Float | List [LanVal] 
             | Func {name :: String, params :: [(String, LanType)], retType :: LanType, body :: [Block]}
 
@@ -46,6 +48,7 @@ instance Show LanVal where
     show (List ls) = "[" ++ joinBy ", "(map show ls) ++ "]"
     show (Func name params retType body) = name ++ "(" ++ joinBy ", " (map convParam params) ++ ") {...}"
 
+-- LanExpr
 data LanExpr = LitVal LanVal | VarRef String | FuncApp String [LanExpr] | Op String LanExpr LanExpr
 
 instance Show LanExpr where
@@ -58,6 +61,7 @@ toBinTree :: LanExpr -> [(String, LanExpr)] -> LanExpr
 toBinTree expr [] = expr
 toBinTree expr ((op,expr'):es) = toBinTree (Op op expr expr') es
 
+-- Block
 data Block = DecVar String LanType LanExpr | SetVar String LanExpr | DefFunc String [(String, LanType)] LanType [Block]
             | Cond LanExpr [Block] [Block] | ForLoop1 String LanExpr LanExpr [Block] | ForLoop2 String LanExpr [Block]
             | WhileLoop LanExpr [Block] | Expr LanExpr

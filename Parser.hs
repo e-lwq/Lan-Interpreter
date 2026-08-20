@@ -205,6 +205,7 @@ parseDecVar = do
                 t <- parseType
                 token $ char '='
                 val <- parseExpr
+                (token $ char ';') </> (token $ char '\n')
                 return $ DecVar name t val
 
 parseSetVar :: Parser Block
@@ -212,6 +213,7 @@ parseSetVar = do
                 name <- parseName
                 token $ char '='
                 expr <- parseExpr
+                (token $ char ';') </> (token $ char '\n')
                 return $ SetVar name expr
 
 parseDefFunc :: Parser Block
@@ -300,6 +302,7 @@ parseBlock' = (do
                     "while" -> parseWhileLoop)
             </> (do
                     expr <- parseExpr
+                    (token $ char ';') </> (token $ char '\n')
                     return $ Expr expr)
 
 parseBlock :: Parser Block

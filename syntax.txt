@@ -1,59 +1,21 @@
 Syntax for my own invented language Lan:
 
-Available Types:
+<<<<<<<<<<<<<<<<< TYPES >>>>>>>>>>>>>>>>>
 - Bool: True, False
-- Char: '...'
-- String: "..."
+- Char: '<char>'
+- String: "<string>"
 - Int: XX
 - Float: XX.XXX
 - List: [XX,XX,...] (allows for elements of different types)
 - Func: <func_name>
+
 (Any denotes any type)
 (Ord = {Char, String, Int, Float})
 (Num = {Int, Float})
 (Concat = {String, List})
 
-Declaring Variables: (start with var)
-    var <var_name> : <type> = <value>
-
-    Variable names:
-    - starts with a letter
-    - followed by letters / digits / '_'
-
-Setting Variables: (start with set)
-    set <var_name> = <value>
-
-Defining Functions: (start with def)
-    def <func_name> (<param1> : <type1> , ...) : <return_type> {
-        <func_body>
-    }
-
-    Function names:
-    - starts with a letter
-    - followed by letters / digits / '_'
-
-Function Applications: 
-    <func_name> ( <arg1> , ... )
-
-Conditionals: (start with if)
-    if ( <condition> )
-    then { <then_body> }
-    else { <else_body> }
-
-For-loops: (start with for)
-    for ( <var_name> in range (<start>, <end>) ) {
-        <loop_body>
-    }
-    for ( <var_name> in <list> ) {
-        <loop_body>
-    }
-
-While-loops: (start with while)
-    while ( <cond> ) {
-        <loop_body>
-    }
-
-Primitive Operators: (infix)
+<<<<<<<<<<<<<<<<< PRIMITIVES >>>>>>>>>>>>>>>>>
+A. Primitive Operators: (infix)
     Precedence 0:
     (||) :: Bool -> Bool -> Bool
 
@@ -78,28 +40,75 @@ Primitive Operators: (infix)
     (//) :: Int -> Int -> Int
     (%) :: Int -> Int -> Int
 
-Primitive Functions: (applied using Function Application syntax)
+B. Primitive Functions: (applied using Function Application syntax)
     head :: Any a => List -> a 
     tail :: List -> List
     concat :: Concat a => a -> a -> a
+    get :: Any a => List -> Int -> a
 
-Atoms:
-= raw values of type Any | (<Expr>) | Variable reference ie <var_name> | Function Application ie <func_name> (<arg1>, ...)
+<<<<<<<<<<<<<<<<< POSSIBLE ENTITIES OF CODE >>>>>>>>>>>>>>>>>
 
-Factors:
+1. Declaring Variables: (start with "var")
+    var <var_name> : <type> = <value>
+
+    Variable names:
+    - starts with a letter
+    - followed by letters / digits / '_'
+
+2. Setting Variables: (start with "set")
+    set <var_name> = <value>
+
+3. Defining Functions: (start with "def")
+    def <func_name> (<param1> : <type1> , ...) : <return_type> {
+        <func_body>
+    }
+
+    Function names:
+    - starts with a letter
+    - followed by letters / digits / '_'
+
+4. Conditionals: (start with "if")
+    if ( <condition> )
+    then { <then_body> }
+    else { <else_body> }
+
+5. For-loops: (start with "for")
+    for ( <var_name> in range (<start>, <end>) ) {
+        <loop_body>
+    }
+    for ( <var_name> in <list> ) {
+        <loop_body>
+    }
+
+6. While-loops: (start with "while")
+    while ( <cond> ) {
+        <loop_body>
+    }
+
+7. Expression:
+    Defined by Exprs below
+
+<<<<<<<<<<<<<<<<< EXPRESSIONS >>>>>>>>>>>>>>>>>
+1. Atoms:
+= raw values of type Any | Variable reference ie <var_name> | Function Application ie <func_name> (<arg1>, ...) | (<Expr>)
+
+2. Factors:
 = <Atom> | <Atom> + [(<Prec4 Op>, <Atom>)]
 
-Terms:
+3. Terms:
 = <Factor> | <Factor> + [(<Prec3 Op>, <Factor>)]
 
-Comps:
+4. Comps:
 = <Term> | <Term> + [(<Prec2 Op>, <Term>)]
 
-AndExprs:
+5. AndExprs:
 = <Comp> | <Comp> + [(<Prec1 Op, <Comp>)]
 
-Exprs:
+6. Exprs:
 = <AndExpr> | <AndExpr> + [(<Prec0 Op>, <AndExpr>)]
 
-Conditions:
-= Exprs that evaluate to a Boolean
+Note:
+Conditions = Exprs that evaluate to a Boolean
+Block = 1 entity of code
+    - Setting variables / Declaring variables / Expressions require a semicolon ';' or end-of-line character '\n' after itself
+
