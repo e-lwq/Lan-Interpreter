@@ -335,3 +335,34 @@ parseBlock = do
 -- parse program
 parseProg :: Parser Program
 parseProg = many parseBlock -- </> return []
+
+-- parse command
+data Repl = Quit | LanExpr LanExpr | Run String | Format String 
+
+fileChar :: [Char]
+fileChar = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-./"
+
+parseFilename :: Parser String
+parseFilename = do
+                    token1 $ char '"'
+                    filename <- many (oneOf fileChar)
+                    token1 $ char '"'
+                    return filename
+
+parseRun :: Parser Repl
+parseRun = do
+                token $ string "#run"
+                filename <- parseFilename
+                return $ Run filename
+
+parseFormat :: Parser Repl
+parseFormat = do
+                token $ string "#format"
+                filename <- parseFilename
+                return $ Format filename
+
+parseQuit :: Parser Repl
+parseQuit = ((token $ string "#quit") </> (token $ string "#q")) >> return Quit
+
+parseREPL :: Parser Repl
+parseREPL = parseRun </> parseFormat </> parseQuit </> (parseExpr >>= return . LanExpr)
