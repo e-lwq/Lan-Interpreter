@@ -50,6 +50,7 @@ B. Primitive Functions: (applied using Function Application syntax)
 
 1. Declaring Variables: (start with "var")
     var <var_name> : <type> = <value>
+    var <var_name> = <value>
 
     Variable names:
     - starts with a letter

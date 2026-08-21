@@ -200,12 +200,18 @@ parseType = do
 parseDecVar :: Parser Block
 parseDecVar = do
                 name <- parseName
-                token $ char ':'
-                t <- parseType
-                token $ char '='
-                val <- parseExpr
-                (token $ char ';') </> (token $ char '\n')
-                return $ DecVar name t val
+                ((do
+                    token $ char ':'
+                    t <- parseType
+                    token $ char '='
+                    val <- parseExpr
+                    (token $ char ';') </> (token $ char '\n')
+                    return $ DecVar name t val) </> 
+                    (do
+                        token $ char '='
+                        val <- parseExpr
+                        (token $ char ';') </> (token $ char '\n')
+                        return $ DecVar2 name val))
 
 parseSetVar :: Parser Block
 parseSetVar = do

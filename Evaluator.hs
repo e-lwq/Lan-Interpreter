@@ -103,14 +103,31 @@ defFunc funcname params retType body = Exe (\env -> case lookupVar env funcname 
                                                                 else return (f,insert funcname f (head env) : tail env))
                                                     where f = Func funcname params retType body
 
-runForLoop1 :: String -> Int -> Program -> Exe LanVal
-runForLoop1 var e prog = do
-                            val <- lookupVarExe var
-                            case val of
-                                Int v -> if v==e then return (Int 0)
-                                        else if v==e-1 then evalProg prog
-                                        else evalProg prog >> setVarExe var (Int (v+1)) >> runForLoop1 var e prog
-                                _ -> throwExeError EnvError
+runForLoop1 :: LanVal -> String -> Int -> Program -> Exe LanVal
+runForLoop1 lastval var e prog = do
+                                    val <- lookupVarExe var
+                                    case val of
+                                        Int v -> if v==e then return lastval
+                                                else evalProg prog >>= \newval -> setVarExe var (Int (v+1)) >> runForLoop1 newval var e prog
+                                        _ -> throwExeError EnvError
+
+runForLoop2 :: LanVal -> String -> [LanVal] -> Program -> Exe LanVal
+runForLoop2 lastval _ [] _ = return lastval
+runForLoop2 _ var (l:ls) prog = do
+                                        setVarExe var l
+                                        newval <- evalProg prog
+                                        runForLoop2 newval var ls prog
+
+runWhileLoop :: LanVal -> LanExpr -> Program -> Exe LanVal
+runWhileLoop lastval cond body = do
+                            res <- evalExpr cond
+                            case res of
+                                Bool b -> if not b
+                                        then return lastval
+                                        else do
+                                                newval <- evalProg body
+                                                runWhileLoop newval cond body
+                                _ -> throwExeError $ TypeMismatch "Bool" cond
 
 evalBlock :: Block -> Exe LanVal
 evalBlock (DecVar varname vartype expr) = do
@@ -118,12 +135,12 @@ evalBlock (DecVar varname vartype expr) = do
                                             if getType val /= vartype
                                             then throwExeError $ TypeMismatch (show vartype) expr
                                             else bindVarExe varname val
+evalBlock (DecVar2 varname expr) = do
+                                    val <- evalExpr expr
+                                    bindVarExe varname val
 evalBlock (SetVar varname expr) = do
                                     newval <- evalExpr expr
-                                    oldval <- lookupVarExe varname
-                                    let t = getType oldval
-                                    if getType newval == t then setVarExe varname newval
-                                    else throwExeError $ TypeMismatch (show t) (LitVal newval)
+                                    setVarExe varname newval
 evalBlock (DefFunc funcname params retType body) = do
                                                     val <- defFunc funcname params retType body
                                                     return val
@@ -146,11 +163,26 @@ evalBlock (ForLoop1 var start end body) = do
                                                                     else do
                                                                             enterBlock
                                                                             bindVarExe var s'
-                                                                            res <- runForLoop1 var e body
+                                                                            res <- runForLoop1 (Int 0) var e body
                                                                             exitBlock
                                                                             return res
                                                             _ -> throwExeError $ TypeMismatch "Int" (LitVal e')
                                                 _ -> throwExeError $ TypeMismatch "Int" (LitVal s')
+evalBlock (ForLoop2 var lsexpr body) = do
+                                        ls <- evalExpr lsexpr
+                                        case ls of
+                                            List xs -> do
+                                                        enterBlock
+                                                        bindVarExe var (Int 0)
+                                                        res <- runForLoop2 (Int 0) var xs body
+                                                        exitBlock
+                                                        return res
+                                            _ -> throwExeError $ TypeMismatch "List" lsexpr
+evalBlock (WhileLoop cond body) = do
+                                    enterBlock
+                                    res <- runWhileLoop (Int 0) cond body
+                                    exitBlock
+                                    return res
 evalBlock (Expr expr) = evalExpr expr
                                             
 -- Evaluate Program

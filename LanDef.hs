@@ -91,6 +91,7 @@ toBinTree expr ((op,expr'):es) = toBinTree (Op op expr expr') es
 
 -- Block
 data Block = DecVar String LanType LanExpr 
+            | DecVar2 String LanExpr
             | SetVar String LanExpr 
             | DefFunc String [(String, LanType)] LanType [Block]
             | Cond LanExpr [Block] [Block] 
@@ -101,6 +102,7 @@ data Block = DecVar String LanType LanExpr
 
 instance Show Block where
     show (DecVar name tp expr) = "var " ++ name ++ " : " ++ show tp ++ " = " ++ show expr
+    show (DecVar2 name expr) = "var " ++ name ++ " = " ++ show expr
     show (SetVar name expr) = "set " ++ name ++ " = " ++ show expr 
     show (DefFunc name params retType body) = "def " ++ name ++ " (" ++ joinBy ", " (map convParam params) 
                                             ++ ") : " ++ show retType ++ " {\n" ++ showBody body ++ "\n}"

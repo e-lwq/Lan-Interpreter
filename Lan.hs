@@ -19,7 +19,7 @@ import GHC.IO.Handle
 runProg :: IO ()
 runProg = do
         inp <- readFile "input/input.txt"
-        case runExe (readEvalProg inp) startEnv of
+        case runExe (readEvalProg (inp++"\n")) startEnv of
                 Left err -> putStrLn (show err)
                 Right (val,_) -> putStrLn (show val)
 
