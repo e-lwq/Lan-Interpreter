@@ -3,6 +3,7 @@ module Evaluator where
 import Helper
 import LanDef
 import PrimitiveOps
+import PrimitiveFuncs
 
 import Data.Map (Map, lookup, fromList, insert)
 import Prelude hiding (lookup)
@@ -13,8 +14,8 @@ evalExpr :: LanExpr -> Exe LanVal
 evalExpr (LitVal val) = return val
 evalExpr (VarRef varname) = lookupVarExe varname
 evalExpr (FuncApp funcname args) = do
-                                        func <- lookupVarExe funcname
-                                        apply func args
+                                    func <- lookupVarExe funcname
+                                    apply func args
 evalExpr (Op op e1 e2) = do
                             v1 <- evalExpr e1
                             v2 <- evalExpr e2
@@ -36,24 +37,30 @@ lookupVarExe varname = Exe (\env -> case lookupVar env varname of
                                     Just val -> return (val,env))
 
 apply :: LanVal -> [LanExpr] -> Exe LanVal
-apply (func@(Func name params retType body)) args = do
-                                                        eval_args <- checkFuncApp func args
-                                                        enterBlock
-                                                        bindVarsExe (zip (map fst params) eval_args)
-                                                        res <- evalProg body
-                                                        exitBlock
-                                                        if getType res == retType 
-                                                        then return res
-                                                        else throwExeError $ TypeMismatch ("Return type " ++ show retType) (LitVal res)
+apply (func@(Func name params retType body)) args = case lookup name primitiveFuncs of
+                                                        Nothing -> do
+                                                                    eval_args <- checkFuncApp func args
+                                                                    enterBlock
+                                                                    bindVarsExe (zip (map fst params) eval_args)
+                                                                    res <- evalProg body
+                                                                    exitBlock
+                                                                    if getType res == retType  || retType==Any
+                                                                    then return res
+                                                                    else throwExeError $ TypeMismatch ("Return type " ++ show retType) (LitVal res)
+                                                        Just f -> do
+                                                                    eval_args <- checkFuncApp func args
+                                                                    case f eval_args of
+                                                                        Left err -> throwExeError err
+                                                                        Right res -> return res
 
 checkFuncApp :: LanVal -> [LanExpr] -> Exe [LanVal]
-checkFuncApp (Func name params retType body) args | lp /= la = throwExeError $ NumArgs lp args
+checkFuncApp (Func name params retType _) args | lp /= la = throwExeError $ NumArgs lp args
                                                     | otherwise = do
                                                                     eval_args <- mapM evalExpr args
                                                                     let {
                                                                         vs = zip args eval_args;
                                                                         ls = zip params vs;
-                                                                        ls' = dropUntil (\((pn,pt),(ae,av))-> pt /= getType av) ls;
+                                                                        ls' = dropUntil (\((pn,pt),(ae,av))-> pt /= getType av && pt /= Any) ls;
                                                                     }
                                                                     if null ls' then return eval_args
                                                                     else throwExeError $ TypeMismatch (show $ snd $ fst $ head ls) (fst $ snd $ head ls)

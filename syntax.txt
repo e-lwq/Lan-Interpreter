@@ -1,6 +1,7 @@
 Syntax for my own invented language Lan:
 
 <<<<<<<<<<<<<<<<< TYPES >>>>>>>>>>>>>>>>>
+- Any: can only be used in function parameters / function return types
 - Bool: True, False
 - Char: '<char>'
 - String: "<string>"
@@ -41,10 +42,15 @@ A. Primitive Operators: (infix)
     (%) :: Int -> Int -> Int
 
 B. Primitive Functions: (applied using Function Application syntax)
+    not :: Bool -> Bool
+    get :: Any a => List -> Int -> a
     head :: Any a => List -> a 
     tail :: List -> List
     concat :: Concat a => a -> a -> a
-    get :: Any a => List -> Int -> a
+    update :: Any a => List -> Int -> a -> List
+    makeList :: Any a => a -> Int -> List
+    length :: List -> Int
+    
 
 <<<<<<<<<<<<<<<<< POSSIBLE ENTITIES OF CODE >>>>>>>>>>>>>>>>>
 

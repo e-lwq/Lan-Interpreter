@@ -8,6 +8,7 @@ import Helper
 import LanDef
 import Parser
 import Evaluator
+import PrimitiveFuncs
 
 import Data.Map
 import System.IO
@@ -34,7 +35,7 @@ nullEnv :: Env
 nullEnv = []
 
 startEnv :: Env
-startEnv = [Data.Map.empty]
+startEnv = [Data.Map.empty, primitiveFuncEnv]
 
 readLan :: Show a => Parser a -> String -> ThrowsError a
 readLan p inp = case parse p "LAN" inp of

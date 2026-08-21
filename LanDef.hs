@@ -38,9 +38,10 @@ showBody :: [Block] -> String
 showBody body = addTab (joinBy "\n" (map show body))
 
 -- LanType
-data LanType = TBool | TChar | TString | TInt | TFloat | TList | TFunc deriving Eq
+data LanType = Any | TBool | TChar | TString | TInt | TFloat | TList | TFunc deriving Eq
 
 instance Show LanType where
+    show Any = "Any"
     show TBool = "Bool"
     show TChar = "Char"
     show TString = "String"
@@ -133,6 +134,8 @@ data LanError = NumArgs Integer [LanExpr]
                 | VarDefTwice String
                 | NotOp String
                 | LoopRange Int Int
+                | MathError String
+                | Runtime String
                 | Default String
                 | EnvError
                 | Empty
@@ -141,11 +144,13 @@ instance Show LanError where
     show (NumArgs n args) = "Expected " ++ show n ++ " arguments, but got: " ++ show args
     show (TypeMismatch tp expr) = "Expected type: " ++ show tp ++ ", but got: " ++ show expr
     show (Parser err) = "Parser error: " ++ show err
-    show (IndOutRange ls n) = "Index out of range: " ++ show ls ++ "[" ++ show n ++ "]"
+    show (IndOutRange ls n) = "Index out of range: " ++ show ls ++ " " ++ show n
     show (VarNotFound var) = "Variable not found: " ++ var
     show (VarDefTwice var) = "Variable defined twice: " ++ var
     show (NotOp op) = "Not a primitive operator: " ++ op
     show (LoopRange s e) = "Invalid range: (" ++ show s ++ ", " ++ show e ++ ")"
+    show (MathError str) = "Math error: " ++ str
+    show (Runtime str) = "Runtime error: " ++ str
     show (Default str) = "Error: " ++ str
     show EnvError = "Environment error"
     show Empty = "Empty error"

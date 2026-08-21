@@ -1,0 +1,7 @@
+var xs = [1,2]
+var ys = [3,4]
+var zs = []
+for (i in xs) {
+    set zs = concat(zs,ys)
+}
+length (zs);

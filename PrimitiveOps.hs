@@ -91,19 +91,20 @@ lsub = lintop (-)
 
 lmul = lintop (*)
 
-ldiv (Int x) (Int y) = return $ Float (fromIntegral x / fromIntegral y)
-ldiv (Int x) (Float y) = return $ Float (fromIntegral x / y)
-ldiv (Float x) (Int y) = return $ Float (x / fromIntegral y)
-ldiv (Float x) (Float y) = return $ Float (x/y)
+matherror = MathError "Division by zero"
+ldiv (Int x) (Int y) = if y==0 then throwError matherror else return $ Float (fromIntegral x / fromIntegral y)
+ldiv (Int x) (Float y) = if y==0 then throwError matherror else return $ Float (fromIntegral x / y)
+ldiv (Float x) (Int y) = if y==0 then throwError matherror else return $ Float (x / fromIntegral y)
+ldiv (Float x) (Float y) = if y==0 then throwError matherror else return $ Float (x/y)
 ldiv (Int x) y = throwError $ TypeMismatch "Num" (LitVal y)
 ldiv (Float x) y = throwError $ TypeMismatch "Num" (LitVal y)
 ldiv x _ = throwError $ TypeMismatch "Num" (LitVal x)
 
-lintdiv (Int x) (Int y) = return $ Int (x `div` y)
+lintdiv (Int x) (Int y) = if y==0 then throwError matherror else return $ Int (x `div` y)
 lintdiv (Int x) y = throwError $ TypeMismatch "Int" (LitVal y)
 lintdiv x _ = throwError $ TypeMismatch "Int" (LitVal x)
 
-lmod (Int x) (Int y) = return $ Int (x `mod` y)
+lmod (Int x) (Int y) = if y==0 then throwError matherror else return $ Int (x `mod` y)
 lmod (Int x) y = throwError $ TypeMismatch "Int" (LitVal y)
 lmod x _ = throwError $ TypeMismatch "Int" (LitVal x)
 
