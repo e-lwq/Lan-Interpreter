@@ -119,6 +119,7 @@ keywords :: [String]
 keywords = ["var", "set", "def", "if", "for", "while"]
 
 type Program = [Block]
+showProg prog = joinBy "\n" (map show prog)
 
 -- Lan Errors
 
@@ -203,7 +204,5 @@ instance Alternative Exe where
                                         Left err -> e2 env
                                         Right (res,env') -> Right (res,env'))
 
-    --many :: Exe a -> Exe [a]
-    --many exe = (pure (:) <*> exe <*> many exe) <|> pure []
-
-    --some = many1
+runExe :: Exe a -> Env -> ThrowsError (a,Env)
+runExe (Exe f) env = f env

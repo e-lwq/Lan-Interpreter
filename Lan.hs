@@ -16,14 +16,19 @@ import Control.Monad.Except
 import Text.ParserCombinators.Parsec hiding (choice)
 import GHC.IO.Handle
 
-lan :: IO ()
-lan = do
+runProg :: IO ()
+runProg = do
         inp <- readFile "input/input.txt"
-        case readEvalProg inp of
+        case runExe (readEvalProg inp) startEnv of
                 Left err -> putStrLn (show err)
-                Right val -> putStrLn (show val)
+                Right (val,_) -> putStrLn (show val)
 
-r = readFile "input/input.txt" >>= putStrLn . show . readEvalExpr
+printProg :: IO ()
+printProg = do
+                inp <- readFile "input/input.txt"
+                case readProg inp of
+                        Left err -> putStrLn (show err)
+                        Right prog -> putStrLn (showProg prog)
 
 nullEnv :: Env
 nullEnv = []
@@ -48,8 +53,10 @@ readBlock = readLan parseBlock
 readProg :: String -> ThrowsError Program
 readProg = readLan parseProg
 
-readEvalExpr :: String -> ThrowsError LanVal
-readEvalExpr inp = readExpr inp >>= evalExpr nullEnv 
+readEvalExpr :: String -> Exe LanVal
+readEvalExpr inp = case readExpr inp of
+                        Left err -> throwExeError err
+                        Right expr -> evalExpr expr
 
 readEvalProg :: String -> Exe LanVal
 readEvalProg prog = case readProg prog of
