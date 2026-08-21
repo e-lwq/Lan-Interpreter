@@ -18,15 +18,23 @@ import Text.ParserCombinators.Parsec hiding (choice)
 import GHC.IO.Handle
 
 lan :: IO ()
-lan = do
-        putStr "| Lan > "
-        command <- getLine
-        case parse parseREPL "LAN" command of
-                Left err -> putStrLn "Invalid command" >> lan
-                Right x -> case x of
-                                Run filename -> runProg filename >> lan
-                                LanExpr expr -> runExpr expr >> lan
-                                Format filename -> printProg filename >> lan
+lan = lan' EmptyComm
+
+lan' :: Repl -> IO ()
+lan' prevComm = do
+                putStr "|Lan> "
+                command <- getLine
+                case parse parseREPL "LAN" command of
+                        Left err -> putStrLn "Invalid command" >> lan' prevComm
+                        Right newComm -> execute prevComm newComm
+
+execute :: Repl -> Repl -> IO ()
+execute oldComm newComm = case newComm of
+                                Run filename -> runProg filename >> lan' newComm
+                                LanExpr expr -> runExpr expr >> lan' newComm
+                                Format filename -> printProg filename >> lan' newComm
+                                Prev -> execute oldComm oldComm
+                                EmptyComm -> lan' oldComm
                                 Quit -> return ()
 
 -- command line functions
@@ -44,7 +52,7 @@ runExpr expr = do
                 r <- runExe (evalExpr expr) startEnv
                 case r of
                         Left err -> putStrLn (show err)
-                        Right (res,_) -> putStrLn (show r)
+                        Right (res,_) -> putStrLn (show res)
 
 printProg :: String -> IO ()
 printProg filename = do

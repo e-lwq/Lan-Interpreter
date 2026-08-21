@@ -337,7 +337,7 @@ parseProg :: Parser Program
 parseProg = many parseBlock -- </> return []
 
 -- parse command
-data Repl = Quit | LanExpr LanExpr | Run String | Format String 
+data Repl = EmptyComm | Quit | Prev | LanExpr LanExpr | Run String | Format String 
 
 fileChar :: [Char]
 fileChar = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-./"
@@ -361,8 +361,13 @@ parseFormat = do
                 filename <- parseFilename
                 return $ Format filename
 
+parsePrev :: Parser Repl
+parsePrev = do
+                (token $ string "#prev") </> (token $ string "#p")
+                return Prev
+
 parseQuit :: Parser Repl
 parseQuit = ((token $ string "#quit") </> (token $ string "#q")) >> return Quit
 
 parseREPL :: Parser Repl
-parseREPL = parseRun </> parseFormat </> parseQuit </> (parseExpr >>= return . LanExpr)
+parseREPL = parseRun </> parseFormat </> parsePrev </> parseQuit </> (parseExpr >>= return . LanExpr)
