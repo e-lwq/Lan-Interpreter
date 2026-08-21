@@ -3,6 +3,12 @@ module LanDef where
 -- Base File, do not import from anything else except helper functions
 import Helper
 
+import Control.Applicative
+import Data.Map (Map)
+import Control.Monad.Except
+import Control.Monad.IO.Class
+import Text.Parsec.Error (ParseError)
+
 -- useful functions / data
 lchars :: [Char]
 lchars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_+=`~{}[]|/?,.<>:; "
@@ -32,7 +38,26 @@ showBody :: [Block] -> String
 showBody body = addTab (joinBy "\n" (map show body))
 
 -- LanType
-data LanType = TBool | TChar | TString | TInt | TFloat | TList | TFunc deriving (Eq, Show)
+data LanType = TBool | TChar | TString | TInt | TFloat | TList | TFunc deriving Eq
+
+instance Show LanType where
+    show TBool = "Bool"
+    show TChar = "Char"
+    show TString = "String"
+    show TInt = "Int"
+    show TFloat = "Float"
+    show TList = "List"
+    show TFunc = "Func"
+
+getType :: LanVal -> LanType
+getType val = case val of
+                Bool _ -> TBool
+                Char _ -> TChar
+                String _ -> TString
+                Int _ -> TInt
+                Float _ -> TFloat
+                List _ -> TList
+                Func _ _ _ _ -> TFunc
 
 -- LanVal
 data LanVal = Bool Bool | Char Char | String String | Int Int | Float Float | List [LanVal] 
@@ -49,7 +74,10 @@ instance Show LanVal where
     show (Func name params retType body) = name ++ "(" ++ joinBy ", " (map convParam params) ++ ") {...}"
 
 -- LanExpr
-data LanExpr = LitVal LanVal | VarRef String | FuncApp String [LanExpr] | Op String LanExpr LanExpr
+data LanExpr = LitVal LanVal 
+            | VarRef String 
+            | FuncApp String [LanExpr] 
+            | Op String LanExpr LanExpr
 
 instance Show LanExpr where
     show (LitVal val) = show val
@@ -62,9 +90,14 @@ toBinTree expr [] = expr
 toBinTree expr ((op,expr'):es) = toBinTree (Op op expr expr') es
 
 -- Block
-data Block = DecVar String LanType LanExpr | SetVar String LanExpr | DefFunc String [(String, LanType)] LanType [Block]
-            | Cond LanExpr [Block] [Block] | ForLoop1 String LanExpr LanExpr [Block] | ForLoop2 String LanExpr [Block]
-            | WhileLoop LanExpr [Block] | Expr LanExpr
+data Block = DecVar String LanType LanExpr 
+            | SetVar String LanExpr 
+            | DefFunc String [(String, LanType)] LanType [Block]
+            | Cond LanExpr [Block] [Block] 
+            | ForLoop1 String LanExpr LanExpr [Block] 
+            | ForLoop2 String LanExpr [Block]
+            | WhileLoop LanExpr [Block] 
+            | Expr LanExpr
 
 instance Show Block where
     show (DecVar name tp expr) = "var " ++ name ++ " : " ++ show tp ++ " = " ++ show expr
@@ -84,3 +117,93 @@ instance Show Block where
 
 keywords :: [String]
 keywords = ["var", "set", "def", "if", "for", "while"]
+
+type Program = [Block]
+
+-- Lan Errors
+
+data LanError = NumArgs Integer [LanExpr] 
+                | TypeMismatch String LanExpr 
+                | Parser ParseError 
+                | IndOutRange LanExpr Int
+                | VarNotFound String
+                | VarDefTwice String
+                | NotOp String
+                | LoopRange Int Int
+                | Default String
+                | EnvError
+                | Empty
+
+instance Show LanError where
+    show (NumArgs n args) = "Expected " ++ show n ++ " arguments, but got: " ++ show args
+    show (TypeMismatch tp expr) = "Expected type: " ++ show tp ++ ", but got: " ++ show expr
+    show (Parser err) = "Parser error: " ++ show err
+    show (IndOutRange ls n) = "Index out of range: " ++ show ls ++ "[" ++ show n ++ "]"
+    show (VarNotFound var) = "Variable not found: " ++ var
+    show (VarDefTwice var) = "Variable defined twice: " ++ var
+    show (NotOp op) = "Not a primitive operator: " ++ op
+    show (LoopRange s e) = "Invalid range: (" ++ show s ++ ", " ++ show e ++ ")"
+    show (Default str) = "Error: " ++ str
+    show EnvError = "Environment error"
+    show Empty = "Empty error"
+
+type ThrowsError = Either LanError -- ThrowsError type = Left error / Right (value :: type)
+
+--throwError :: LanError -> ThrowsError a
+--throwError err = Left err
+
+extractVal :: Either a b -> b
+extractVal (Right x) = x
+
+type Env = [Map String LanVal] -- X use LanExpr, because I will be doing eager evaluation
+-- implement as stack, where top of stack = head of Env
+
+newtype Exe a = Exe (Env -> ThrowsError (a,Env))
+
+throws2exe :: ThrowsError a -> Exe a
+throws2exe (Left err) = Exe (\env -> Left err)
+throws2exe (Right res) = Exe (\env -> Right (res,env))
+
+throwExeError :: LanError -> Exe a
+throwExeError err = Exe (\env -> throwError err)
+
+instance Functor Exe where
+    fmap :: (a -> b) -> Exe a -> Exe b
+    fmap f (Exe exe) = Exe (\env -> case exe env of
+                                        Left err -> Left err
+                                        Right (res,env') -> Right (f res, env'))
+
+instance Applicative Exe where
+    pure :: a -> Exe a 
+    pure x = Exe (\env -> Right (x,env))
+
+    (<*>) :: Exe (a->b) -> Exe a -> Exe b
+    Exe exe1 <*> Exe exe2 = Exe (\env -> case exe1 env of
+                                            Left err -> Left err
+                                            Right (f,env') -> case exe2 env' of
+                                                                    Left err -> Left err
+                                                                    Right (x,env'') -> Right (f x, env''))
+
+instance Monad Exe where
+    return :: a -> Exe a
+    return = pure
+
+    (>>=) :: Exe a -> (a -> Exe b) -> Exe b
+    Exe exe >>= f = Exe (\env -> case exe env of
+                                    Left err -> Left err
+                                    Right (res,env') -> let Exe exe' = f res in
+                                                        exe' env')
+
+instance Alternative Exe where
+    empty :: Exe a
+    empty = Exe (\env -> Left Empty)
+
+    (<|>) :: Exe a -> Exe a -> Exe a
+    Exe e1 <|> Exe e2 = Exe (\env -> case e1 env of
+                                        Left err -> e2 env
+                                        Right (res,env') -> Right (res,env'))
+
+    --many :: Exe a -> Exe [a]
+    --many exe = (pure (:) <*> exe <*> many exe) <|> pure []
+
+    --some = many1

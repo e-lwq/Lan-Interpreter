@@ -73,7 +73,7 @@ B. Primitive Functions: (applied using Function Application syntax)
     else { <else_body> }
 
 5. For-loops: (start with "for")
-    for ( <var_name> in range (<start>, <end>) ) {
+    for ( <var_name> in range (<start :: Int>, <end :: Int>) ) {
         <loop_body>
     }
     for ( <var_name> in <list> ) {

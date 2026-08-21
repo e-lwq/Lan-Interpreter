@@ -7,7 +7,6 @@ import Control.Monad
 import System.Environment
 import Text.ParserCombinators.Parsec hiding (token, space, spaces, choice)
 
-
 -- useful functions
 underscore :: Parser Char
 underscore = char '_'
@@ -311,3 +310,7 @@ parseBlock = do
                 block <- parseBlock'
                 many nextline
                 return block
+
+-- parse program
+parseProg :: Parser Program
+parseProg = many parseBlock

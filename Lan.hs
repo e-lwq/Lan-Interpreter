@@ -7,30 +7,51 @@ module Lan where
 import Helper
 import LanDef
 import Parser
+import Evaluator
 
+import Data.Map
 import System.IO
 import System.Environment
+import Control.Monad.Except
 import Text.ParserCombinators.Parsec hiding (choice)
 import GHC.IO.Handle
 
 lan :: IO ()
 lan = do
-        inp <- getLine
-        putStrLn (readExpr inp)
-        --main
+        inp <- readFile "input/input.txt"
+        case readEvalProg inp of
+                Left err -> putStrLn (show err)
+                Right val -> putStrLn (show val)
 
-r = readFile "input.txt" >>= putStrLn . readBlock
+r = readFile "input/input.txt" >>= putStrLn . show . readEvalExpr
 
-readLan :: Show a => Parser a -> String -> String
+nullEnv :: Env
+nullEnv = []
+
+startEnv :: Env
+startEnv = [Data.Map.empty]
+
+readLan :: Show a => Parser a -> String -> ThrowsError a
 readLan p inp = case parse p "LAN" inp of
-					Left err -> "Error: \n" ++ show err 
-					Right res -> "Parsed: \n" ++ show res
+					Left err -> throwError $ Parser err
+					Right res -> return res
 
-readVal :: String -> String
+readVal :: String -> ThrowsError LanVal
 readVal = readLan parseVal
 
-readExpr :: String -> String
+readExpr :: String -> ThrowsError LanExpr
 readExpr = readLan parseExpr
 
-readBlock :: String -> String
+readBlock :: String -> ThrowsError Block
 readBlock = readLan parseBlock
+
+readProg :: String -> ThrowsError Program
+readProg = readLan parseProg
+
+readEvalExpr :: String -> ThrowsError LanVal
+readEvalExpr inp = readExpr inp >>= evalExpr nullEnv 
+
+readEvalProg :: String -> Exe LanVal
+readEvalProg prog = case readProg prog of
+                        Left err -> throwExeError err
+                        Right res -> evalProg res

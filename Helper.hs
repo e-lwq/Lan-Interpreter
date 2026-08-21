@@ -28,3 +28,12 @@ splitOn _ [] = [[]]
 splitOn c (x:xs) | c==x = []:x':xs'
                     | otherwise = (x:x'):xs'
                 where (x':xs') = splitOn c xs
+
+dropUntil :: (a -> Bool) -> [a] -> [a]
+dropUntil _ [] = []
+dropUntil p (x:xs) | p x = (x:xs)
+                | otherwise = dropUntil p xs
+
+isLeft :: Either a b -> Bool
+isLeft (Left x) = True
+isLeft _ = False
