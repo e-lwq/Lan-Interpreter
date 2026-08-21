@@ -7,16 +7,25 @@ import LanDef
 
 import Data.Map hiding (map, null, take, drop)
 import Control.Monad.Except
+import Data.Char
 
 primitiveFuncEnv :: Map String LanVal
 primitiveFuncEnv = fromList [("get", Func "get" [("xs",TList), ("ys",TInt)] Any []),
                             ("head", Func "head" [("xs",TList)] Any []),
                             ("tail", Func "tail" [("xs",TList)] TList []),
-                            ("concat", Func "concat" [("xs",TList), ("ys",TList)] TList []),
+                            ("concat", Func "concat" [("xs",Concat), ("ys",Concat)] TList []),
                             ("not", Func "not" [("x",TBool)] TBool []),
                             ("update", Func "update" [("xs",TList),("i",TInt),("x",Any)] TList []),
                             ("makelist", Func "makelist" [("x",Any),("i",TInt)] TList []),
-                            ("length", Func "length" [("xs",TList)] TInt [])]
+                            ("length", Func "length" [("xs",Concat)] TInt []),
+                            ("sqrt", Func "sqrt" [("x",Num)] TFloat []),
+                            ("toInt", Func "toInt" [("x",TFloat)] TInt []),
+                            ("toFloat", Func "toFloat" [("x",TInt)] TFloat []),
+                            ("append", Func "append" [("xs",TList),("x",Any)] TList []),
+                            ("remove", Func "remove" [("xs",TList),("i",TInt)] TList []),
+                            ("charAt", Func "charAt" [("str",TString),("i",TInt)] TChar []),
+                            ("ord", Func "ord" [("c",TChar)] TInt []),
+                            ("chr", Func "chr" [("i",TInt)] TChar [])]
 
 primitiveFuncs :: Map String ([LanVal] -> ThrowsError LanVal)
 primitiveFuncs = fromList [("get", lget),
@@ -26,7 +35,15 @@ primitiveFuncs = fromList [("get", lget),
                             ("not", lnot),
                             ("update", lupdate),
                             ("makelist", lmakelist),
-                            ("length", llength)]
+                            ("length", llength),
+                            ("sqrt", lsqrt),
+                            ("toInt", ltoInt),
+                            ("toFloat", ltoFloat),
+                            ("append", lappend),
+                            ("remove", lremove),
+                            ("charAt", lcharAt),
+                            ("ord", lord),
+                            ("chr", lchr)]
 
 lget :: [LanVal] -> ThrowsError LanVal
 lget [List ls, Int i] = if i>=length ls || i < 0
@@ -47,9 +64,9 @@ ltail ls = throwError $ NumArgs 2 (map LitVal ls)
 
 lconcat :: [LanVal] -> ThrowsError LanVal
 lconcat [List xs, List ys] = return $ List (xs++ys)
-lconcat [List _, y] = throwError $ TypeMismatch "List" (LitVal y)
-lconcat [x, _] = throwError $ TypeMismatch "List" (LitVal x)
-lconcat ls = throwError $ NumArgs 2 (map LitVal ls)
+lconcat [String xs, String ys] = return $ String (xs++ys)
+lconcat [List xs, String ys] = throwError $ TypeMismatch "List" (LitVal $ String ys)
+lconcat [String xs, List ys] = throwError $ TypeMismatch "String" (LitVal $ List ys)
 
 lnot :: [LanVal] -> ThrowsError LanVal
 lnot [Bool b] = return $ Bool (not b)
@@ -59,7 +76,13 @@ lnot ls = throwError $ NumArgs 1 (map LitVal ls)
 lupdate :: [LanVal] -> ThrowsError LanVal
 lupdate [List ls, Int i, x] = if i<0 || i>=length ls then throwError $ IndOutRange (LitVal $ List ls) i
                                 else return $ List (take i ls ++ [x] ++ drop (i+1) ls)
--- supposedly, need to exhaustively consider other cases as well
+
+lappend :: [LanVal] -> ThrowsError LanVal
+lappend [List ls, x] = return $ List (ls++[x])
+
+lremove :: [LanVal] -> ThrowsError LanVal
+lremove [List ls, Int i] = if i<0 || i>=length ls then throwError $ IndOutRange (LitVal $ List ls) i
+                            else return $ List (take i ls ++ drop (i+1) ls)
 
 lmakelist :: [LanVal] -> ThrowsError LanVal
 lmakelist [x, Int i] = if i<0 then throwError $ Runtime "Cannot make list with negative size"
@@ -67,3 +90,26 @@ lmakelist [x, Int i] = if i<0 then throwError $ Runtime "Cannot make list with n
 
 llength :: [LanVal] -> ThrowsError LanVal
 llength [List ls] = return $ Int (length ls)
+llength [String ls] = return $ Int (length ls)
+
+lsqrt :: [LanVal] -> ThrowsError LanVal
+lsqrt [Int x] = if x<0 then throwError $ MathError ("Cannot take square root of negative number: " ++ show x)
+                    else return $ Float (sqrt (fromIntegral x))
+lsqrt [Float x] = if x<0 then throwError $ MathError ("Cannot take square root of negative number: " ++ show x)
+                    else return $ Float (sqrt x)
+
+ltoFloat :: [LanVal] -> ThrowsError LanVal
+ltoFloat [Int x] = return $ Float (fromIntegral x)
+
+ltoInt :: [LanVal] -> ThrowsError LanVal
+ltoInt [Float x] = return $ Int (round x)
+
+lcharAt :: [LanVal] -> ThrowsError LanVal
+lcharAt [String str, Int i] = if i<0 || i>=length str then throwError $ IndOutRange (LitVal $ String str) i
+                                else return $ Char (str!!i)
+
+lord :: [LanVal] -> ThrowsError LanVal
+lord [Char c] = return $ Int (ord c)
+
+lchr :: [LanVal] -> ThrowsError LanVal
+lchr [Int i] = return $ Char (chr i)

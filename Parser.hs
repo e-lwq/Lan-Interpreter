@@ -197,6 +197,21 @@ parseType = do
                     "Float" -> TFloat
                     "List" -> TList
 
+parseFuncType :: Parser LanType
+parseFuncType = do
+                t <- token $ choice $ toStrParser ["Bool", "Char", "String", "Int", "Float", "List", "Any", "Num", "Ord", "Concat"]
+                return $ case t of
+                    "Bool" -> TBool
+                    "Char" -> TChar
+                    "String" -> TString
+                    "Int" -> TInt
+                    "Float" -> TFloat
+                    "List" -> TList
+                    "Any" -> Any
+                    "Num" -> Num
+                    "Ord" -> Ord
+                    "Concat" -> Concat
+
 parseDecVar :: Parser Block
 parseDecVar = do
                 name <- parseName
@@ -229,13 +244,13 @@ parseDefFunc = do
                     param :: Parser (String, LanType) = do
                         pn <- parseName
                         token $ char ':'
-                        tn <- parseType
+                        tn <- parseFuncType
                         return (pn, tn)
                 }
                 params <- sepBy param comma
                 token $ char ')'
                 token $ char ':'
-                retType <- parseType
+                retType <- parseFuncType
                 token $ char '{'
                 blocks <- many parseBlock -- ??? parseBlock includes parsing nextline
                 token $ char '}'

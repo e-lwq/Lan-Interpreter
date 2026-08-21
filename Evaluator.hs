@@ -44,7 +44,7 @@ apply (func@(Func name params retType body)) args = case lookup name primitiveFu
                                                                     bindVarsExe (zip (map fst params) eval_args)
                                                                     res <- evalProg body
                                                                     exitBlock
-                                                                    if getType res == retType  || retType==Any
+                                                                    if checkType retType (getType res)
                                                                     then return res
                                                                     else throwExeError $ TypeMismatch ("Return type " ++ show retType) (LitVal res)
                                                         Just f -> do
@@ -53,6 +53,13 @@ apply (func@(Func name params retType body)) args = case lookup name primitiveFu
                                                                         Left err -> throwExeError err
                                                                         Right res -> return res
 
+checkType :: LanType -> LanType -> Bool
+checkType Any _ = True
+checkType Num tp = tp==TInt || tp==TFloat
+checkType Concat tp = tp==TList || tp==TString
+checkType Ord tp = tp `elem` [TChar,TString,TInt,TFloat]
+checkType a b = a==b
+
 checkFuncApp :: LanVal -> [LanExpr] -> Exe [LanVal]
 checkFuncApp (Func name params retType _) args | lp /= la = throwExeError $ NumArgs lp args
                                                     | otherwise = do
@@ -60,7 +67,7 @@ checkFuncApp (Func name params retType _) args | lp /= la = throwExeError $ NumA
                                                                     let {
                                                                         vs = zip args eval_args;
                                                                         ls = zip params vs;
-                                                                        ls' = dropUntil (\((pn,pt),(ae,av))-> pt /= getType av && pt /= Any) ls;
+                                                                        ls' = dropWhile (\((pn,pt),(ae,av))-> checkType pt (getType av)) ls;
                                                                     }
                                                                     if null ls' then return eval_args
                                                                     else throwExeError $ TypeMismatch (show $ snd $ fst $ head ls) (fst $ snd $ head ls)

@@ -38,10 +38,13 @@ showBody :: [Block] -> String
 showBody body = addTab (joinBy "\n" (map show body))
 
 -- LanType
-data LanType = Any | TBool | TChar | TString | TInt | TFloat | TList | TFunc deriving Eq
+data LanType = Any | Num | Ord | Concat | TBool | TChar | TString | TInt | TFloat | TList | TFunc deriving Eq
 
 instance Show LanType where
     show Any = "Any"
+    show Num = "Num"
+    show Ord = "Ord"
+    show Concat = "Concat"
     show TBool = "Bool"
     show TChar = "Char"
     show TString = "String"

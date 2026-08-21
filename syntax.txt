@@ -1,7 +1,7 @@
 Syntax for my own invented language Lan:
 
 <<<<<<<<<<<<<<<<< TYPES >>>>>>>>>>>>>>>>>
-- Any: can only be used in function parameters / function return types
+- Any: can only be used in function parameters / function return types in primitive functions
 - Bool: True, False
 - Char: '<char>'
 - String: "<string>"
@@ -43,14 +43,20 @@ A. Primitive Operators: (infix)
 
 B. Primitive Functions: (applied using Function Application syntax)
     not :: Bool -> Bool
+    sqrt :: Num a => a -> Float
+    toInt :: Float -> Int
+    toFloat :: Int -> Float
     get :: Any a => List -> Int -> a
     head :: Any a => List -> a 
     tail :: List -> List
     concat :: Concat a => a -> a -> a
+    append :: Any a => List -> a -> List
+    remove :: List -> Int -> List
     update :: Any a => List -> Int -> a -> List
     makeList :: Any a => a -> Int -> List
-    length :: List -> Int
-    
+    length :: Concat a => a -> Int
+    charAt :: String -> Int -> Char
+    ord :: Char -> Int
 
 <<<<<<<<<<<<<<<<< POSSIBLE ENTITIES OF CODE >>>>>>>>>>>>>>>>>
 
@@ -119,3 +125,14 @@ Conditions = Exprs that evaluate to a Boolean
 Block = 1 entity of code
     - Setting variables / Declaring variables / Expressions require a semicolon ';' or end-of-line character '\n' after itself
 
+<<<<<<<<<<<<<<<<< Library Functions >>>>>>>>>>>>>>>>>
+Math:
+pow :: Int -> Int -> Int
+max :: Ord a => a -> a -> a 
+min :: Ord a => a -> a -> a 
+
+String:
+updateStr :: String -> Int -> Char -> String
+
+List:
+sort :: List -> List
