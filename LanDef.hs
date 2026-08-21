@@ -160,6 +160,8 @@ instance Show LanError where
 
 type ThrowsError = Either LanError -- ThrowsError type = Left error / Right (value :: type)
 
+type IOThrowsError a = IO (ThrowsError a)
+
 --throwError :: LanError -> ThrowsError a
 --throwError err = Left err
 
@@ -169,50 +171,63 @@ extractVal (Right x) = x
 type Env = [Map String LanVal] -- X use LanExpr, because I will be doing eager evaluation
 -- implement as stack, where top of stack = head of Env
 
-newtype Exe a = Exe (Env -> ThrowsError (a,Env))
-
-throws2exe :: ThrowsError a -> Exe a
-throws2exe (Left err) = Exe (\env -> Left err)
-throws2exe (Right res) = Exe (\env -> Right (res,env))
+newtype Exe a = Exe (Env -> IOThrowsError (a,Env))
 
 throwExeError :: LanError -> Exe a
-throwExeError err = Exe (\env -> throwError err)
+throwExeError err = Exe (\env -> return $ throwError err)
 
 instance Functor Exe where
     fmap :: (a -> b) -> Exe a -> Exe b
-    fmap f (Exe exe) = Exe (\env -> case exe env of
-                                        Left err -> Left err
-                                        Right (res,env') -> Right (f res, env'))
+    fmap f (Exe exe) = Exe (\env -> do
+                                        r <- exe env
+                                        case r of
+                                            Left err -> return $ Left err
+                                            Right (res,env') -> return $ Right (f res, env'))
 
 instance Applicative Exe where
     pure :: a -> Exe a 
-    pure x = Exe (\env -> Right (x,env))
+    pure x = Exe (\env -> return $ Right (x,env))
 
     (<*>) :: Exe (a->b) -> Exe a -> Exe b
-    Exe exe1 <*> Exe exe2 = Exe (\env -> case exe1 env of
-                                            Left err -> Left err
-                                            Right (f,env') -> case exe2 env' of
-                                                                    Left err -> Left err
-                                                                    Right (x,env'') -> Right (f x, env''))
+    Exe exe1 <*> Exe exe2 = Exe (\env -> do
+                                            r <- exe1 env
+                                            case r of
+                                                Left err -> return $ Left err
+                                                Right (f,env') -> do
+                                                                    r' <- exe2 env' 
+                                                                    case r' of
+                                                                        Left err -> return $ Left err
+                                                                        Right (x,env'') -> return $ Right (f x, env''))
 
 instance Monad Exe where
     return :: a -> Exe a
     return = pure
 
     (>>=) :: Exe a -> (a -> Exe b) -> Exe b
-    Exe exe >>= f = Exe (\env -> case exe env of
-                                    Left err -> Left err
-                                    Right (res,env') -> let Exe exe' = f res in
-                                                        exe' env')
+    Exe exe >>= f = Exe (\env -> do
+                                    r <- exe env
+                                    case r of
+                                        Left err -> return $ Left err
+                                        Right (res,env') -> let Exe exe' = f res in
+                                                            exe' env')
 
-instance Alternative Exe where
-    empty :: Exe a
-    empty = Exe (\env -> Left Empty)
+--instance Alternative Exe where
+--    empty :: Exe a
+--    empty = Exe (\env -> return $ Left Empty)
 
-    (<|>) :: Exe a -> Exe a -> Exe a
-    Exe e1 <|> Exe e2 = Exe (\env -> case e1 env of
-                                        Left err -> e2 env
-                                        Right (res,env') -> Right (res,env'))
+--    (<|>) :: Exe a -> Exe a -> Exe a
+--    Exe e1 <|> Exe e2 = Exe (\env -> do
+--                                        r <- e1 env
+--                                        case r of
+--                                            Left err -> e2 env
+--                                            Right (res,env') -> Right (res,env'))
 
-runExe :: Exe a -> Env -> ThrowsError (a,Env)
+liftIO2Exe :: IOThrowsError a -> Exe a
+liftIO2Exe m = Exe (\env -> do
+                                v <- m
+                                case v of
+                                    Left err -> return $ throwError err
+                                    Right res -> return $ return (res,env))
+
+runExe :: Exe a -> Env -> IOThrowsError (a,Env)
 runExe (Exe f) env = f env

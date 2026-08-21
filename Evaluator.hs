@@ -33,8 +33,8 @@ lookupVar (env:es) varname = case lookup varname env of
 
 lookupVarExe :: String -> Exe LanVal
 lookupVarExe varname = Exe (\env -> case lookupVar env varname of
-                                    Nothing -> throwError $ VarNotFound varname
-                                    Just val -> return (val,env))
+                                    Nothing -> return $ throwError $ VarNotFound varname
+                                    Just val -> return $ return (val,env))
 
 apply :: LanVal -> [LanExpr] -> Exe LanVal
 apply (func@(Func name params retType body)) args = case lookup name primitiveFuncs of
@@ -49,9 +49,8 @@ apply (func@(Func name params retType body)) args = case lookup name primitiveFu
                                                                     else throwExeError $ TypeMismatch ("Return type " ++ show retType) (LitVal res)
                                                         Just f -> do
                                                                     eval_args <- checkFuncApp func args
-                                                                    case f eval_args of
-                                                                        Left err -> throwExeError err
-                                                                        Right res -> return res
+                                                                    r <- liftIO2Exe $ f eval_args
+                                                                    return r
 
 checkType :: LanType -> LanType -> Bool
 checkType Any _ = True
@@ -79,20 +78,20 @@ checkFuncApp (Func name params retType _) args | lp /= la = throwExeError $ NumA
 --bindVars vars env = fromList vars : env
 
 bindVarExe :: String -> LanVal -> Exe LanVal
-bindVarExe varname val = Exe (\env -> if null env then throwError EnvError
+bindVarExe varname val = Exe (\env -> if null env then return $ throwError EnvError
                                 else case lookup varname (head env) of
-                                        Just _ -> throwError $ VarDefTwice varname
-                                        Nothing -> return (val, insert varname val (head env) : tail env))
+                                        Just _ -> return $ throwError $ VarDefTwice varname
+                                        Nothing -> return $ return (val, insert varname val (head env) : tail env))
 
 bindVarsExe :: [(String, LanVal)] -> Exe [LanVal]
 bindVarsExe vars = mapM (uncurry bindVarExe) vars
 
 -- Evaluate Block
 exitBlock :: Exe ()
-exitBlock = Exe (\env -> if null env then throwError EnvError else return ((), tail env))
+exitBlock = Exe (\env -> if null env then (return $ throwError EnvError) else return $ return ((), tail env))
 
 enterBlock :: Exe ()
-enterBlock = Exe (\env -> return ((),(fromList []):env))
+enterBlock = Exe (\env -> return $ return ((),(fromList []):env))
 
 --evalExpr2Exe :: LanExpr -> Exe LanVal
 --evalExpr2Exe expr = Exe (\env -> case evalExpr env expr of
@@ -101,8 +100,8 @@ enterBlock = Exe (\env -> return ((),(fromList []):env))
 
 setVarExe :: String -> LanVal -> Exe LanVal
 setVarExe varname val = Exe (\env -> case setVar env varname val of
-                                        Left err -> throwError err
-                                        Right res -> return (val,res))
+                                        Left err -> return $ throwError err
+                                        Right res -> return $ return (val,res))
 
 setVar :: Env -> String -> LanVal -> ThrowsError Env
 setVar [] varname _ = throwError $ VarNotFound varname
@@ -112,25 +111,28 @@ setVar (env:es) varname val = case lookup varname env of
 
 defFunc :: String -> [(String, LanType)] -> LanType -> [Block] -> Exe LanVal
 defFunc funcname params retType body = Exe (\env -> case lookupVar env funcname of
-                                                    Just _ -> throwError $ VarDefTwice funcname
-                                                    Nothing -> if null env then throwError EnvError
-                                                                else return (f,insert funcname f (head env) : tail env))
+                                                    Just _ -> return $ throwError $ VarDefTwice funcname
+                                                    Nothing -> if null env then return $ throwError EnvError
+                                                                else return $ return (f,insert funcname f (head env) : tail env))
                                                     where f = Func funcname params retType body
 
-runForLoop1 :: LanVal -> String -> Int -> Program -> Exe LanVal
-runForLoop1 lastval var e prog = do
-                                    val <- lookupVarExe var
-                                    case val of
-                                        Int v -> if v==e then return lastval
-                                                else evalProg prog >>= \newval -> setVarExe var (Int (v+1)) >> runForLoop1 newval var e prog
-                                        _ -> throwExeError EnvError
+runForLoop1 :: LanVal -> String -> Int -> Int -> Program -> Exe LanVal
+runForLoop1 lastval var s e prog = if s==e then return lastval
+                                    else do
+                                            enterBlock
+                                            bindVarExe var (Int s)
+                                            newval <- evalProg prog
+                                            exitBlock
+                                            runForLoop1 newval var (s+1) e prog
 
 runForLoop2 :: LanVal -> String -> [LanVal] -> Program -> Exe LanVal
 runForLoop2 lastval _ [] _ = return lastval
 runForLoop2 _ var (l:ls) prog = do
-                                        setVarExe var l
-                                        newval <- evalProg prog
-                                        runForLoop2 newval var ls prog
+                                    enterBlock
+                                    bindVarExe var l
+                                    newval <- evalProg prog
+                                    exitBlock
+                                    runForLoop2 newval var ls prog
 
 runWhileLoop :: LanVal -> LanExpr -> Program -> Exe LanVal
 runWhileLoop lastval cond body = do
@@ -139,7 +141,9 @@ runWhileLoop lastval cond body = do
                                 Bool b -> if not b
                                         then return lastval
                                         else do
+                                                enterBlock
                                                 newval <- evalProg body
+                                                exitBlock
                                                 runWhileLoop newval cond body
                                 _ -> throwExeError $ TypeMismatch "Bool" cond
 
@@ -175,30 +179,18 @@ evalBlock (ForLoop1 var start end body) = do
                                                             Int e -> if s>e 
                                                                     then throwExeError $ LoopRange s e
                                                                     else do
-                                                                            enterBlock
-                                                                            bindVarExe var s'
-                                                                            res <- runForLoop1 (Int 0) var e body
-                                                                            exitBlock
+                                                                            res <- runForLoop1 (Int 0) var s e body
                                                                             return res
                                                             _ -> throwExeError $ TypeMismatch "Int" (LitVal e')
                                                 _ -> throwExeError $ TypeMismatch "Int" (LitVal s')
 evalBlock (ForLoop2 var lsexpr body) = do
                                         ls <- evalExpr lsexpr
                                         case ls of
-                                            List xs -> do
-                                                        enterBlock
-                                                        bindVarExe var (Int 0)
-                                                        res <- runForLoop2 (Int 0) var xs body
-                                                        exitBlock
-                                                        return res
+                                            List xs -> runForLoop2 (Int 0) var xs body
                                             _ -> throwExeError $ TypeMismatch "List" lsexpr
-evalBlock (WhileLoop cond body) = do
-                                    enterBlock
-                                    res <- runWhileLoop (Int 0) cond body
-                                    exitBlock
-                                    return res
+evalBlock (WhileLoop cond body) = runWhileLoop (Int 0) cond body
 evalBlock (Expr expr) = evalExpr expr
-                                            
+
 -- Evaluate Program
 evalProg :: Program -> Exe LanVal
 evalProg [] = return $ Int 0

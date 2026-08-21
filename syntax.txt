@@ -57,6 +57,9 @@ B. Primitive Functions: (applied using Function Application syntax)
     length :: Concat a => a -> Int
     charAt :: String -> Int -> Char
     ord :: Char -> Int
+    toString :: Any a => a -> String
+    print :: String -> String
+    println :: String -> String
 
 <<<<<<<<<<<<<<<<< POSSIBLE ENTITIES OF CODE >>>>>>>>>>>>>>>>>
 

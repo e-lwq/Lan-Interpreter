@@ -334,4 +334,4 @@ parseBlock = do
 
 -- parse program
 parseProg :: Parser Program
-parseProg = many parseBlock
+parseProg = many parseBlock -- </> return []

@@ -20,9 +20,11 @@ import GHC.IO.Handle
 runProg :: IO ()
 runProg = do
         inp <- readFile "input/input.txt"
-        case runExe (readEvalProg (inp++"\n")) startEnv of
-                Left err -> putStrLn (show err)
-                Right (val,_) -> putStrLn (show val)
+        do
+                r <- runExe (readEvalProg (inp++"\n")) startEnv
+                case r of
+                        Left err -> putStrLn (show err)
+                        Right (val,_) -> return () --putStrLn (show val)
 
 printProg :: IO ()
 printProg = do
