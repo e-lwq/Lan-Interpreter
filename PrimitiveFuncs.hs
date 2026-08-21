@@ -8,6 +8,7 @@ import LanDef
 import Data.Map hiding (map, null, take, drop)
 import Control.Monad.Except
 import Data.Char
+import Text.Read (readMaybe)
 
 primitiveFuncEnv :: Map String LanVal
 primitiveFuncEnv = fromList [("get", Func "get" [("xs",TList), ("ys",TInt)] Any []),
@@ -20,6 +21,7 @@ primitiveFuncEnv = fromList [("get", Func "get" [("xs",TList), ("ys",TInt)] Any 
                             ("length", Func "length" [("xs",Concat)] TInt []),
                             ("sqrt", Func "sqrt" [("x",Num)] TFloat []),
                             ("toInt", Func "toInt" [("x",TFloat)] TInt []),
+                            ("strToInt", Func "strToInt" [("x",TString)] TInt []),
                             ("toFloat", Func "toFloat" [("x",TInt)] TFloat []),
                             ("append", Func "append" [("xs",TList),("x",Any)] TList []),
                             ("remove", Func "remove" [("xs",TList),("i",TInt)] TList []),
@@ -29,7 +31,9 @@ primitiveFuncEnv = fromList [("get", Func "get" [("xs",TList), ("ys",TInt)] Any 
                             ("makeString", Func "makeString" [("str",TString),("i",TInt)] TString []),
                             ("toString", Func "toString" [("x",Any)] TString []),
                             ("print", Func "print" [("str",Any)] TString []),
-                            ("println", Func "println" [("str",Any)] TString [])]
+                            ("println", Func "println" [("str",Any)] TString []),
+                            ("input", Func "input" [] TString []),
+                            ("prompt", Func "prompt" [("str",TString)] TString [])]
 
 primitiveFuncs :: Map String ([LanVal] -> IOThrowsError LanVal)
 primitiveFuncs = fromList [("get", lget),
@@ -41,6 +45,7 @@ primitiveFuncs = fromList [("get", lget),
                             ("makeList", lmakeList),
                             ("length", llength),
                             ("sqrt", lsqrt),
+                            ("strToInt", lstrToInt),
                             ("toInt", ltoInt),
                             ("toFloat", ltoFloat),
                             ("append", lappend),
@@ -51,7 +56,9 @@ primitiveFuncs = fromList [("get", lget),
                             ("makeString", lmakeString),
                             ("toString", ltoString),
                             ("print", lprint),
-                            ("println", lprintln)]
+                            ("println", lprintln),
+                            ("input", linput),
+                            ("prompt", lprompt)]
 
 lget :: [LanVal] -> IOThrowsError LanVal
 lget [List ls, Int i] = if i>=length ls || i < 0
@@ -112,6 +119,11 @@ ltoFloat [Int x] = return $ return $ Float (fromIntegral x)
 ltoInt :: [LanVal] -> IOThrowsError LanVal
 ltoInt [Float x] = return $ return $ Int (round x)
 
+lstrToInt :: [LanVal] -> IOThrowsError LanVal
+lstrToInt [String x] = case readMaybe x of
+                            Nothing -> return $ throwError $ Default ("Cannot read as Int: " ++ x)
+                            Just n -> return $ return $ Int n
+
 lcharAt :: [LanVal] -> IOThrowsError LanVal
 lcharAt [String str, Int i] = if i<0 || i>=length str then return $ throwError $ IndOutRange (LitVal $ String str) i
                                 else return $ return $ Char (str!!i)
@@ -159,3 +171,14 @@ lprintln [x] = do
                     case res of
                         Left err -> return $ throwError err
                         Right str -> lprintln' [str]
+
+linput :: [LanVal] -> IOThrowsError LanVal
+linput [] = do
+                inp <- getLine
+                return $ return $ String inp
+
+lprompt :: [LanVal] -> IOThrowsError LanVal
+lprompt [String str] = do
+                        putStr str
+                        inp <- getLine
+                        return $ return $ String inp

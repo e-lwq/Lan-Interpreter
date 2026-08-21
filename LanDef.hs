@@ -211,17 +211,6 @@ instance Monad Exe where
                                         Right (res,env') -> let Exe exe' = f res in
                                                             exe' env')
 
---instance Alternative Exe where
---    empty :: Exe a
---    empty = Exe (\env -> return $ Left Empty)
-
---    (<|>) :: Exe a -> Exe a -> Exe a
---    Exe e1 <|> Exe e2 = Exe (\env -> do
---                                        r <- e1 env
---                                        case r of
---                                            Left err -> e2 env
---                                            Right (res,env') -> Right (res,env'))
-
 liftIO2Exe :: IOThrowsError a -> Exe a
 liftIO2Exe m = Exe (\env -> do
                                 v <- m

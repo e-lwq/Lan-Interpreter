@@ -87,16 +87,11 @@ bindVarsExe :: [(String, LanVal)] -> Exe [LanVal]
 bindVarsExe vars = mapM (uncurry bindVarExe) vars
 
 -- Evaluate Block
-exitBlock :: Exe ()
-exitBlock = Exe (\env -> if null env then (return $ throwError EnvError) else return $ return ((), tail env))
-
 enterBlock :: Exe ()
 enterBlock = Exe (\env -> return $ return ((),(fromList []):env))
 
---evalExpr2Exe :: LanExpr -> Exe LanVal
---evalExpr2Exe expr = Exe (\env -> case evalExpr env expr of
---                                    Left err -> throwError err
---                                    Right val -> return (val,env))
+exitBlock :: Exe ()
+exitBlock = Exe (\env -> if null env then (return $ throwError EnvError) else return $ return ((), tail env))
 
 setVarExe :: String -> LanVal -> Exe LanVal
 setVarExe varname val = Exe (\env -> case setVar env varname val of

@@ -46,6 +46,7 @@ B. Primitive Functions: (applied using Function Application syntax)
     sqrt :: Num a => a -> Float
     toInt :: Float -> Int
     toFloat :: Int -> Float
+    strToInt :: String -> Int
     get :: Any a => List -> Int -> a
     head :: Any a => List -> a 
     tail :: List -> List
@@ -60,6 +61,8 @@ B. Primitive Functions: (applied using Function Application syntax)
     toString :: Any a => a -> String
     print :: String -> String
     println :: String -> String
+    input :: String
+    prompt :: String -> String
 
 <<<<<<<<<<<<<<<<< POSSIBLE ENTITIES OF CODE >>>>>>>>>>>>>>>>>
 
