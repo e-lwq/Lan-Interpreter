@@ -1,0 +1,28 @@
+def pow(x:Int, n:Int) : Int {
+    if(n<0){
+        println("n must be non-negative")
+        -1
+    }else{
+        if(n==0){
+            1
+        }else{
+            x*pow(x,n-1)
+        }
+    }
+}
+
+def max(x:Num, y:Num) : Num {
+    if(x<y) {y;} else {x;}
+}
+
+def min(x:Num, y:Num) : Num {
+    if(x<y) {x;} else {y;}
+}
+
+
+println(pow(2,5))
+println(pow(2,-1))
+println(max(4.5,3))
+println(min(-10,0.123))
+println(max(1,0))
+println(min(0,1))

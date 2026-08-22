@@ -1,0 +1,62 @@
+def elem(x : Any, xs : List) : Bool {
+    var flag : Bool = False
+    var tp = getType(x)
+    for(i in range(0,length(xs))){
+        var tmp = get(xs,i)
+        if(getType(tmp)==tp){
+            if(x==tmp){
+                set flag = True
+            }else{}
+        }else{}
+    }
+    flag
+}
+
+
+def inRange(xs : List, i : Int) : Bool {
+    not(i<0 || i>=length(xs))
+}
+
+def swap(xs : List, i : Int, j : Int) : List {
+    if(inRange(xs,i) && inRange(xs,j)){
+        var tmp = get(xs,i)
+        set xs = update(xs,i,get(xs,j))
+        set xs = update(xs,j,tmp)
+    }else{[];}
+}
+
+def bubbleSort(xs : List) : List {
+    for(i in range(0,length(xs)-1)){
+        for(j in range(i+1,length(xs))){
+            if(get(xs,i)>get(xs,j)){
+                set xs = swap(xs,i,j)
+            }else{}
+        }
+    }
+    xs
+}
+
+def sort(xs : List) : List {
+    if(length(xs)==0){
+        []
+    }else{
+        var flag : Bool = True
+        var tp : String = getType(head(xs))
+        for(i in range(1,length(xs))){
+            if(tp != getType(get(xs,i))){
+                set flag = False
+            }else{}
+        }
+        if(not(flag) || elem(getType(tp),["List","Bool"])){
+            println("Elements of list to be sorted must be of same type")
+            []
+        }else{
+            bubbleSort(xs)
+        }
+    }
+}
+
+println(elem(1,["abc",'a',2.0,[1,2,3],2]))
+println(elem("abc",[123,'a',"abc",3.0]))
+println(sort([3,1,5,4,2]))
+println(sort(["aba cadabra","zebra","lollipop","baddie","reddit","red"]))

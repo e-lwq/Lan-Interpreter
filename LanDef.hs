@@ -146,7 +146,6 @@ data LanError = NumArgs Integer [LanExpr]
                 | VarNotFound String
                 | VarDefTwice String
                 | NotOp String
-                | LoopRange Int Int
                 | MathError String
                 | Runtime String
                 | Default String
@@ -161,7 +160,6 @@ instance Show LanError where
     show (VarNotFound var) = "Variable not found: " ++ var
     show (VarDefTwice var) = "Variable defined twice: " ++ var
     show (NotOp op) = "Not a primitive operator: " ++ op
-    show (LoopRange s e) = "Invalid range: (" ++ show s ++ ", " ++ show e ++ ")"
     show (MathError str) = "Math error: " ++ str
     show (Runtime str) = "Runtime error: " ++ str
     show (Default str) = "Error: " ++ str

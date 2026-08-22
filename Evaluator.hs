@@ -112,7 +112,7 @@ defFunc funcname params retType body = Exe (\env -> case lookupVar env funcname 
                                                     where f = Func funcname params retType body
 
 runForLoop1 :: LanVal -> String -> Int -> Int -> Program -> Exe LanVal
-runForLoop1 lastval var s e prog = if s==e then return lastval
+runForLoop1 lastval var s e prog = if s>=e then return lastval
                                     else do
                                             enterBlock
                                             bindVarExe var (Int s)
@@ -171,11 +171,9 @@ evalBlock (ForLoop1 var start end body) = do
                                             e' <- evalExpr end
                                             case s' of
                                                 Int s -> case e' of
-                                                            Int e -> if s>e 
-                                                                    then throwExeError $ LoopRange s e
-                                                                    else do
-                                                                            res <- runForLoop1 (Int 0) var s e body
-                                                                            return res
+                                                            Int e -> do
+                                                                        res <- runForLoop1 (Int 0) var s e body
+                                                                        return res
                                                             _ -> throwExeError $ TypeMismatch "Int" (LitVal e')
                                                 _ -> throwExeError $ TypeMismatch "Int" (LitVal s')
 evalBlock (ForLoop2 var lsexpr body) = do

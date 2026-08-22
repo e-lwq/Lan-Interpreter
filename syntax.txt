@@ -63,6 +63,7 @@ B. Primitive Functions: (applied using Function Application syntax)
     println :: String -> String
     input :: String
     prompt :: String -> String
+    getType :: Any a => a -> String
 
 <<<<<<<<<<<<<<<<< POSSIBLE ENTITIES OF CODE >>>>>>>>>>>>>>>>>
 
@@ -85,6 +86,8 @@ B. Primitive Functions: (applied using Function Application syntax)
     Function names:
     - starts with a letter
     - followed by letters / digits / '_'
+
+    All arguments are passed by value, not reference
 
 4. Conditionals: (start with "if")
     if ( <condition> )
@@ -130,15 +133,3 @@ Note:
 Conditions = Exprs that evaluate to a Boolean
 Block = 1 entity of code
     - Setting variables / Declaring variables / Expressions require a semicolon ';' or end-of-line character '\n' after itself
-
-<<<<<<<<<<<<<<<<< Library Functions >>>>>>>>>>>>>>>>>
-Math:
-pow :: Int -> Int -> Int
-max :: Ord a => a -> a -> a 
-min :: Ord a => a -> a -> a 
-
-String:
-updateStr :: String -> Int -> Char -> String
-
-List:
-sort :: List -> List

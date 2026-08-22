@@ -1,0 +1,24 @@
+def updateStr(str : String, i : Int, c : Char) : String {
+    var tmp : String = ""
+    for(j in range(0,length(str))){
+        if(i==j){
+            set tmp = concat(tmp, toString(c))
+        }else{
+            set tmp = concat(tmp, toString(charAt(str,j)))
+        }
+    }
+    tmp
+}
+
+def substr(str : String, i : Int, size : Int) : String {
+    var tmp : String = ""
+    for(j in range(i,i+size)){
+        set tmp = concat(tmp, toString(charAt(str,j)))
+    }
+    tmp
+}
+
+println(updateStr("abcdef",2,'z'))
+println(updateStr("abcdef",6,'z'))
+println(substr("abcdef",2,2))
+println(substr("abcdef",4,3))

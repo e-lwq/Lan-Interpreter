@@ -273,7 +273,7 @@ parseCond = do
                 cond <- parseExpr
                 token $ char ')'
                 many nextline
-                token $ string "then"
+                --token $ string "then"
                 token $ char '{'
                 then_body <- many parseBlock
                 token $ char '}'

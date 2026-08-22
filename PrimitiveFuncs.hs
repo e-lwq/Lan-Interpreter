@@ -33,7 +33,8 @@ primitiveFuncEnv = fromList [("get", Func "get" [("xs",TList), ("ys",TInt)] Any 
                             ("print", Func "print" [("str",Any)] TString []),
                             ("println", Func "println" [("str",Any)] TString []),
                             ("input", Func "input" [] TString []),
-                            ("prompt", Func "prompt" [("str",TString)] TString [])]
+                            ("prompt", Func "prompt" [("str",TString)] TString []),
+                            ("getType", Func "getType" [("x",Any)] TString [])]
 
 primitiveFuncs :: Map String ([LanVal] -> IOThrowsError LanVal)
 primitiveFuncs = fromList [("get", lget),
@@ -58,7 +59,8 @@ primitiveFuncs = fromList [("get", lget),
                             ("print", lprint),
                             ("println", lprintln),
                             ("input", linput),
-                            ("prompt", lprompt)]
+                            ("prompt", lprompt),
+                            ("getType", lgetType)]
 
 lget :: [LanVal] -> IOThrowsError LanVal
 lget [List ls, Int i] = if i>=length ls || i < 0
@@ -206,3 +208,6 @@ lprompt [String str] = do
                         putStr str
                         inp <- getLine
                         return $ return $ String inp
+
+lgetType :: [LanVal] -> IOThrowsError LanVal
+lgetType [x] = return $ return $ String $ show $ getType x
