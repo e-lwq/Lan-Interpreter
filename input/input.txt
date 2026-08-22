@@ -1,16 +1,1 @@
-var il = makeList (0,10)
-var ol = makeList (il, 10)
-
-for (i in range (0, length(ol))) {
-    for (j in range (0, length(il))){
-        set ol = update (ol, i, update(get(ol,i),j,i*10+j))
-    }
-}
-
-for (i in range(0, length(ol))){
-    for(j in range(0,length(il))){
-        print(get(get(ol,i),j))
-        print(" ")
-    }
-    println("")
-}
+print()

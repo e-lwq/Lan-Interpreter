@@ -70,12 +70,22 @@ data LanVal = Bool Bool | Char Char | String String | Int Int | Float Float | Li
 instance Show LanVal where
     show (Bool True) = "True"
     show (Bool False) = "False"
-    show (Char ch) = "'" ++ [ch] ++ "'"
-    show (String str) = "\"" ++ str ++ "\""
+    show (Char ch) = "'" ++  dispCh ch ++ "'"
+    show (String str) = "\"" ++ dispStr str ++ "\""
     show (Int n) = show n
     show (Float n) = show n
     show (List ls) = "[" ++ joinBy ", "(map show ls) ++ "]"
     show (Func name params retType body) = name ++ "(" ++ joinBy ", " (map convParam params) ++ ") {...}"
+
+dispCh :: Char -> String
+dispCh '\n' = "\\n"
+dispCh '\r' = "\\r"
+dispCh '\t' = "\\t"
+dispCh '\\' = "\\"
+dispCh c = [c]
+
+dispStr :: String -> String
+dispStr = concatMap dispCh
 
 -- LanExpr
 data LanExpr = LitVal LanVal 

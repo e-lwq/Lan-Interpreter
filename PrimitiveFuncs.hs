@@ -140,37 +140,61 @@ lmakeString [String str, Int i] = return $ return $ String (concat $ take i (rep
 ltoString :: [LanVal] -> IOThrowsError LanVal
 ltoString [Int x] = return $ return $ String (show x)
 ltoString [Float x] = return $ return $ String (show x)
-ltoString [Char x] = return $ return $ String (show x)
+ltoString [Char x] = return $ return $ String [x]
 ltoString [Bool x] = return $ return $ String (show x)
 ltoString [String x] = return $ return $ String x
 ltoString [List ls] = do
-                        res <- mapM (ltoString . (:[])) ls
-                        if any isLeft res then return $ head (dropWhile (not.isLeft) res)
-                        else return $ return $ String $ joinBy ", " $ map ((\(String x)->x).extractVal) res
+                        res <- toPrint' (List ls)
+                        case res of
+                            Left err -> return $ throwError err
+                            Right str -> return $ return $ String str
 
-lprint' :: [LanVal] -> IOThrowsError LanVal
-lprint' [String str] = do
+lprint' :: String -> IOThrowsError LanVal
+lprint' str = do
                         putStr str
                         return $ return $ String str
 
-lprintln' :: [LanVal] -> IOThrowsError LanVal
-lprintln' [String str] = do
+lprintln' :: String -> IOThrowsError LanVal
+lprintln' str = do
                             putStrLn str
                             return $ return $ String str
 
 lprint :: [LanVal] -> IOThrowsError LanVal
 lprint [x] = do
-                    res <- ltoString [x]
+                    res <- toPrint x
                     case res of
                         Left err -> return $ throwError err
-                        Right str -> lprint' [str]
+                        Right str -> lprint' str
 
 lprintln :: [LanVal] -> IOThrowsError LanVal
 lprintln [x] = do
-                    res <- ltoString [x]
+                    res <- toPrint x
                     case res of
                         Left err -> return $ throwError err
-                        Right str -> lprintln' [str]
+                        Right str -> lprintln' str
+
+toPrint' :: LanVal -> IOThrowsError String
+toPrint' (Int x) = return $ return $ show x
+toPrint' (Float x) = return $ return $ show x
+toPrint' (Bool x) = return $ return $ show x
+toPrint' (Char x) = return $ return $ "'" ++ dispCh x ++ "'"
+toPrint' (String x) = return $ return $ "\"" ++ (concatMap dispCh x) ++ "\""
+toPrint' (List ls) = do
+                        res <- mapM toPrint' ls
+                        if any isLeft res then do
+                                                    let Left err = head (dropWhile (not . isLeft) res) 
+                                                    return $ throwError err
+                        else do
+                                let r = map extractVal res
+                                return $ return $ "[" ++ joinBy ", " r ++ "]"
+
+toPrint :: LanVal -> IOThrowsError String
+toPrint (Int x) = return $ return $ show x
+toPrint (Float x) = return $ return $ show x
+toPrint (Char x) = return $ return $ "'" ++ dispCh x ++ "'"
+toPrint (String x) = return $ return $ x
+toPrint (Bool x) = return $ return $ show x
+toPrint (List ls) = toPrint' (List ls)
 
 linput :: [LanVal] -> IOThrowsError LanVal
 linput [] = do

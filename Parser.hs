@@ -37,18 +37,29 @@ parseBool :: Parser LanVal
 parseBool = (string "True" </> string "False") >>= \b ->
                 return $ Bool (if b=="True" then True else False)
 
+escapeChar :: Parser Char
+escapeChar = do
+                char '\\'
+                c <- oneOf "'\\\"nrt"
+                case c of
+                    '\\' -> return '\\'
+                    '"' -> return '"'
+                    'n' -> return '\n'
+                    'r' -> return '\r'
+                    't' -> return '\t'
+
 parseChar :: Parser LanVal
 parseChar = do
                 char '\''
-                c <- oneOf lchars
+                c <- (escapeChar </> noneOf "\"")
                 char '\''
                 return (Char c)
 
 parseString :: Parser LanVal
 parseString = do
                 char '"'
-                str <- many (oneOf lchars)
-                token2 (char '"')
+                str <- many (escapeChar </> noneOf "\"")
+                char '"'
                 return (String str)
 
 parseInt :: Parser LanVal
