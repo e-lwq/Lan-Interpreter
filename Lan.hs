@@ -9,8 +9,9 @@ import LanDef
 import Parser
 import Evaluator
 import PrimitiveFuncs
+import Repl
 
-import Data.Map
+import Data.Map hiding (null)
 import System.IO
 import System.Environment
 import Control.Monad.Except
@@ -18,24 +19,27 @@ import Text.ParserCombinators.Parsec hiding (choice)
 import GHC.IO.Handle
 
 lan :: IO ()
-lan = lan' EmptyComm
+lan = lan' "" EmptyComm
 
-lan' :: Repl -> IO ()
-lan' prevComm = do
+lan' :: String -> Repl -> IO ()
+lan' filepath prevComm = do
                 putStr "|Lan> "
                 command <- getLine
                 case parse parseREPL "LAN" command of
-                        Left err -> putStrLn "Invalid command" >> lan' prevComm
-                        Right newComm -> execute prevComm newComm
+                        Left err -> putStrLn "Invalid command" >> lan' filepath prevComm
+                        Right newComm -> execute filepath prevComm newComm
 
-execute :: Repl -> Repl -> IO ()
-execute oldComm newComm = case newComm of
-                                Run filename -> runProg filename >> lan' newComm
-                                LanExpr expr -> runExpr expr >> lan' newComm
-                                Format filename -> printProg filename >> lan' newComm
-                                Prev -> execute oldComm oldComm
-                                EmptyComm -> lan' oldComm
+execute :: String -> Repl -> Repl -> IO ()
+execute filepath oldComm newComm = case newComm of
+                                Run filename -> runProg (filepath ++ filename) >> lan' filepath newComm
+                                LanExpr expr -> runExpr expr >> lan' filepath newComm
+                                Format filename -> printProg filename >> lan' filepath newComm
+                                Prev -> execute filepath oldComm oldComm
+                                Cd filepath' -> lan' (conv filepath') newComm
+                                EmptyComm -> lan' filepath oldComm
                                 Quit -> return ()
+        where
+                conv str = if null str || last str == '/' then str else str ++ "/"
 
 -- command line functions
 runProg :: String -> IO ()
